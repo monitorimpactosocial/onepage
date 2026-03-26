@@ -7,7 +7,7 @@ load_dotenv(BASE_DIR / ".env")
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'instance' / 'paracel_onepage.db'}")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", f"sqlite:///{Path(BASE_DIR / 'instance' / 'paracel_onepage.db').as_posix()}")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WORKBOOK_TEMPLATE = os.getenv("WORKBOOK_TEMPLATE", str(BASE_DIR / "data" / "PARACEL_repositorio_mensual_template.xlsx"))
     WORKBOOK_OUTPUT = os.getenv("WORKBOOK_OUTPUT", str(BASE_DIR / "instance" / "PARACEL_repositorio_mensual_online.xlsx"))
