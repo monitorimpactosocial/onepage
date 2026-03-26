@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Usuarios</h1>
+<section class="panel">
+  <form method="post" class="form-grid">
+    <label>Usuario<input name="username" required></label>
+    <label>Nombre completo<input name="full_name" required></label>
+    <label>Email<input name="email"></label>
+    <label>Rol<select name="role"><option>responsable</option><option>admin</option></select></label>
+    <label>Área<select name="area_code"><option value=""></option>{% for area in areas %}<option value="{{ area.code }}">{{ area.name }}</option>{% endfor %}</select></label>
+    <label>Contraseña<input name="password" value="cambiar2026"></label>
+    <label class="inline"><input type="checkbox" name="is_active" checked> Activo</label>
+    <button type="submit">Crear</button>
+  </form>
+</section>
+<table class="data-table">
+  <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Área</th><th>Email</th><th></th></tr></thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.username }}</td><td>{{ item.full_name }}</td><td>{{ item.role }}</td><td>{{ item.area_code }}</td><td>{{ item.email }}</td>
+      <td>
+        <form method="post" action="{{ url_for('admin.delete_user', item_id=item.id) }}" onsubmit="return confirm('¿Eliminar?')">
+          <button type="submit">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

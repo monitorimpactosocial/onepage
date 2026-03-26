@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Listas de opciones</h1>
+<section class="panel">
+  <form method="post" class="form-grid">
+    <label>Lista<input name="list_code" required></label>
+    <label>Código<input name="value_code"></label>
+    <label>Etiqueta<input name="value_label" required></label>
+    <label>Grupo<input name="group_name"></label>
+    <label>Área propietaria<input name="owner_area_code"></label>
+    <label>Orden<input name="sort_order" value="0"></label>
+    <label class="inline"><input type="checkbox" name="user_editable"> Usuario puede editar</label>
+    <label class="inline"><input type="checkbox" name="is_active" checked> Activa</label>
+    <button type="submit">Crear</button>
+  </form>
+</section>
+<table class="data-table">
+  <thead><tr><th>Lista</th><th>Código</th><th>Etiqueta</th><th>Área</th><th>Editable</th><th>Orden</th><th></th></tr></thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.list_code }}</td><td>{{ item.value_code }}</td><td>{{ item.value_label }}</td><td>{{ item.owner_area_code }}</td><td>{{ "Sí" if item.user_editable else "No" }}</td><td>{{ item.sort_order }}</td>
+      <td><form method="post" action="{{ url_for('admin.delete_option', item_id=item.id) }}" onsubmit="return confirm('¿Eliminar?')"><button type="submit">Eliminar</button></form></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

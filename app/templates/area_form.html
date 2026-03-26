@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ area.name }}, período {{ period_key }}</h1>
+<p class="muted">{{ area.description }}</p>
+
+<form method="get" class="toolbar">
+  <input type="hidden" name="dummy" value="1">
+  <label>Período
+    <input type="month" name="period_key" value="{{ period_key }}">
+  </label>
+  <button type="submit">Cambiar período</button>
+  <span class="muted">Referencia comparativa disponible para {{ previous_period_key }}</span>
+</form>
+
+{% if manageable_lists %}
+<section class="panel">
+  <h2>Listas editables por el usuario</h2>
+  <div class="area-list">
+    {% for item in manageable_lists %}
+    <a class="area-link" href="{{ url_for('main.list_manager', list_code=item.list_code, area_code=area.code) }}">
+      <strong>{{ item.list_code }}</strong>
+      <span>{{ item.count }} elementos, editable por el responsable del área</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="stack-large">
+  {% for section in layout %}
+  <section class="panel">
+    <h2>{{ section.section }}</h2>
+    {% for group in section.groups %}
+      {% if group.repeated %}
+      <div class="table-header-inline">
+        <h3>{{ group.group_key }}</h3>
+        {% if group.user_can_manage_options and group.list_code %}
+        <a class="button secondary" href="{{ url_for('main.list_manager', list_code=group.list_code, area_code=area.code) }}">Gestionar filas</a>
+        {% endif %}
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fila</th>
+            {% for q in group.questions %}
+            <th>{{ q.label }}{% if q.unit %}<br><small>{{ q.unit }}</small>{% endif %}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in group.rows %}
+          <tr>
+            <td>{{ row.value_label }}</td>
+            {% for q in group.questions %}
+            {% set key = (row.value_code, q.question_key) %}
+            {% set prev = saved.get(key) %}
+            {% set prev_year = previous_values.get(key) %}
+            <td>
+              {% if q.input_type == 'select' and group.options %}
+                <select name="resp::{{ row.value_code }}::{{ q.question_key }}">
+                  <option value=""></option>
+                  {% for opt in group.options %}
+                  <option value="{{ opt.value_label }}" {% if prev and prev.value_text == opt.value_label %}selected{% endif %}>{{ opt.value_label }}</option>
+                  {% endfor %}
+                </select>
+              {% elif q.input_type == 'multiselect' and group.options %}
+                <select name="resp::{{ row.value_code }}::{{ q.question_key }}" multiple size="4">
+                  {% set current_values = prev.value_text.split('|') if prev and prev.value_text else [] %}
+                  {% for opt in group.options %}
+                  <option value="{{ opt.value_label }}" {% if opt.value_label in current_values %}selected{% endif %}>{{ opt.value_label }}</option>
+                  {% endfor %}
+                </select>
+              {% elif q.input_type == 'date' %}
+                <input type="date" name="resp::{{ row.value_code }}::{{ q.question_key }}" value="{{ prev.value_date if prev and prev.value_date else '' }}">
+              {% elif q.input_type in ['text', 'long_text'] %}
+                <textarea name="resp::{{ row.value_code }}::{{ q.question_key }}">{{ prev.value_text if prev else '' }}</textarea>
+              {% else %}
+                <input type="number" step="any" name="resp::{{ row.value_code }}::{{ q.question_key }}" value="{{ prev.value_num if prev and prev.value_num is not none else '' }}">
+              {% endif %}
+              {% if prev_year %}
+              <div class="prior-year">Año anterior: {{ prev_year.value_num if prev_year.value_num is not none else prev_year.value_text or prev_year.value_date }}</div>
+              {% endif %}
+              {% if q.allow_observation %}
+              <textarea name="obs::{{ row.value_code }}::{{ q.question_key }}" placeholder="Observación">{{ prev.observation if prev else '' }}</textarea>
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="form-grid">
+        {% for q in group.questions %}
+        {% set key = ('general', q.question_key) %}
+        {% set prev = saved.get(key) %}
+        {% set prev_year = previous_values.get(key) %}
+        <label>
+          <span>{{ q.label }}{% if q.unit %} ({{ q.unit }}){% endif %}</span>
+          {% if q.input_type == 'select' and group.options %}
+          <select name="resp::general::{{ q.question_key }}">
+            <option value=""></option>
+            {% for opt in group.options %}
+            <option value="{{ opt.value_label }}" {% if prev and prev.value_text == opt.value_label %}selected{% endif %}>{{ opt.value_label }}</option>
+            {% endfor %}
+          </select>
+          {% elif q.input_type == 'multiselect' and group.options %}
+          {% set current_values = prev.value_text.split('|') if prev and prev.value_text else [] %}
+          <select name="resp::general::{{ q.question_key }}" multiple size="5">
+            {% for opt in group.options %}
+            <option value="{{ opt.value_label }}" {% if opt.value_label in current_values %}selected{% endif %}>{{ opt.value_label }}</option>
+            {% endfor %}
+          </select>
+          {% elif q.input_type == 'date' %}
+          <input type="date" name="resp::general::{{ q.question_key }}" value="{{ prev.value_date if prev and prev.value_date else '' }}">
+          {% elif q.input_type in ['text','long_text'] %}
+          <textarea name="resp::general::{{ q.question_key }}">{{ prev.value_text if prev else '' }}</textarea>
+          {% else %}
+          <input type="number" step="any" name="resp::general::{{ q.question_key }}" value="{{ prev.value_num if prev and prev.value_num is not none else '' }}">
+          {% endif %}
+          {% if prev_year %}
+          <small class="prior-year">Año anterior: {{ prev_year.value_num if prev_year.value_num is not none else prev_year.value_text or prev_year.value_date }}</small>
+          {% endif %}
+          {% if q.allow_observation %}
+          <textarea name="obs::general::{{ q.question_key }}" placeholder="Observación">{{ prev.observation if prev else '' }}</textarea>
+          {% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+  {% endfor %}
+
+  <section class="panel">
+    <h2>Texto libre para el reporte imprimible</h2>
+    <textarea name="narrative_text" rows="8" placeholder="Pegar aquí el texto que desee incorporar al reporte PDF">{{ sub.narrative_text if sub else '' }}</textarea>
+  </section>
+
+  <section class="panel">
+    <h2>Documentos adjuntos de respaldo</h2>
+    <input type="file" name="attachments" multiple>
+    {% if attachments %}
+    <table class="data-table compact">
+      <thead><tr><th>Archivo</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>
+        {% for item in attachments %}
+        <tr>
+          <td><a href="{{ url_for('main.media_file', filename=item.stored_filename) }}" target="_blank">{{ item.original_filename }}</a></td>
+          <td>{{ item.uploaded_at.strftime("%Y-%m-%d %H:%M") if item.uploaded_at else "" }}</td>
+          <td>
+            <form method="post" action="{{ url_for('main.delete_attachment', item_id=item.id) }}" onsubmit="return confirm('¿Eliminar adjunto?')">
+              <button type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <label>Comentarios de envío
+      <textarea name="submission_comments">{{ sub.comments if sub else '' }}</textarea>
+    </label>
+  </section>
+
+  <div class="toolbar">
+    <button type="submit" name="submit_action" value="save">Guardar borrador</button>
+    <button type="submit" name="submit_action" value="send">Enviar</button>
+  </div>
+</form>
+{% endblock %}

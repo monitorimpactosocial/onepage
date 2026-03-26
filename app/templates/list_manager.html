@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Gestión de lista, {{ list_code }}</h1>
+<p class="muted">Esta pantalla permite agregar, editar o quitar elementos de una lista fija o de una tabla repetible del área.</p>
+
+<section class="panel">
+  <h2>Agregar nuevo elemento</h2>
+  <form method="post" class="form-grid">
+    <input type="hidden" name="action" value="create">
+    <label>Código<input name="value_code"></label>
+    <label>Etiqueta<input name="value_label" required></label>
+    <label>Grupo<input name="group_name" value="{{ list_code }}"></label>
+    <button type="submit">Agregar</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Elementos actuales</h2>
+  <table class="data-table">
+    <thead><tr><th>Orden</th><th>Código</th><th>Etiqueta</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.sort_order }}</td>
+        <td>{{ item.value_code }}</td>
+        <td>{{ item.value_label }}</td>
+        <td>
+          <form method="post" class="inline-form">
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" name="item_id" value="{{ item.id }}">
+            <input name="sort_order" value="{{ item.sort_order }}" style="width:70px;">
+            <input name="value_code" value="{{ item.value_code }}">
+            <input name="value_label" value="{{ item.value_label }}">
+            <button type="submit">Guardar</button>
+          </form>
+          <form method="post" class="inline-form" onsubmit="return confirm('¿Eliminar elemento?')">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="item_id" value="{{ item.id }}">
+            <button type="submit">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

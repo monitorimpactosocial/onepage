@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="report-actions no-print">
+  <button onclick="window.print()">Imprimir / Guardar PDF</button>
+</div>
+<section class="report-cover">
+  <h1>Reporte mensual, {{ snapshot.period_key }}</h1>
+  <p>Resumen ejecutivo de la carga mensual consolidada.</p>
+</section>
+
+<section class="cards">
+  {% for label, value, fmt in [
+    ("Formularios enviados", snapshot.kpis.formularios_enviados_pct, "pct"),
+    ("Seguidores", snapshot.kpis.seguidores_total, "int"),
+    ("Visitas web", snapshot.kpis.visitas_web, "int"),
+    ("Plantación", snapshot.kpis.plantacion_ha, "num"),
+    ("Plantación fomento", snapshot.kpis.fomento_plantadas_ha, "num"),
+    ("Cumplimiento ambiental", snapshot.kpis.cumplimiento_ambiental, "pct"),
+    ("OPEX + CAPEX B26", snapshot.kpis.opex_capex_b26_ytd, "int")
+  ] %}
+  <article class="card">
+    <h3>{{ label }}</h3>
+    <div class="metric">
+      {% if fmt == "pct" %}{{ "{:.1%}".format(value or 0) }}
+      {% elif fmt == "num" %}{{ "{:,.2f}".format(value or 0) }}
+      {% else %}{{ "{:,.0f}".format(value or 0) }}{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="panel">
+  <h2>Estado de formularios</h2>
+  <table class="data-table">
+    <thead><tr><th>Área</th><th>Estado</th><th>Responsable</th><th>Completitud</th></tr></thead>
+    <tbody>
+      {% for item in submissions %}
+      <tr>
+        <td>{{ item.area_code }}</td>
+        <td>{{ item.status }}</td>
+        <td>{{ item.responsible_user }}</td>
+        <td>{{ "{:.1f}%".format(item.completeness_pct or 0) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% for item in submissions %}
+<section class="panel">
+  <h2>{{ item.area_code }}</h2>
+  {% if item.narrative_text %}
+  <div class="narrative-block">{{ item.narrative_text|replace('\n','<br>')|safe }}</div>
+  {% endif %}
+  {% if item.comments %}
+  <p><strong>Comentarios:</strong> {{ item.comments }}</p>
+  {% endif %}
+  {% if item.attachments %}
+  <h3>Adjuntos de respaldo</h3>
+  <ul>
+    {% for att in item.attachments %}
+    <li>{{ att.original_filename }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

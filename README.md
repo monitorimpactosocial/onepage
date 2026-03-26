@@ -1,113 +1,76 @@
-# PARACEL · Sistema de Reportes Mensuales (SRM)
+# PARACEL ONEPAGE, app web de reportes mensuales
 
-Aplicación web estática para la carga, consolidación y visualización de indicadores mensuales de PARACEL S.A.
+Aplicación Flask para sustituir el enlace de Excel en línea por una app web autenticada, con captura por área, administración central, recordatorios mensuales, tablero interactivo y exportación del repositorio a libro Excel y a libro en línea.
 
-## Estructura de archivos
+## Mejoras incorporadas
 
+- inicio de sesión por usuario y contraseña
+- usuario `admin` con contraseña inicial `paracel2026`
+- solo el administrador puede crear o eliminar preguntas
+- los usuarios responsables pueden gestionar las listas fijas y filas repetibles de su área cuando la pregunta esté marcada como lista editable
+- ejemplo implementado, `D. Fomento – Contratos y Ejecución`, con alta, baja y edición de proveedores
+- observaciones laterales únicamente cuando la pregunta lo requiera
+- carga de documentos adjuntos de respaldo
+- bloque de texto libre por formulario, incorporado al reporte imprimible
+- uso permanente del logo corporativo, con posibilidad de reemplazo desde Administración
+- selector de período en formularios y dashboard, con referencia del mismo período del año anterior
+- dashboard ejecutivo con KPIs y series históricas
+- reporte imprimible, listo para guardar en PDF desde el navegador
+- exportación del repositorio al libro `PARACEL_repositorio_mensual_online.xlsx`
+- carga del libro exportado a OneDrive o SharePoint mediante Microsoft Graph, cuando se configuren credenciales
+- envío de recordatorios mensuales el día 25 al responsable de cada área
+
+## Puesta en marcha
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python run.py seed
+flask --app run.py run
 ```
-/
-├── index.html          # Shell principal (login + app)
-├── css/
-│   └── style.css       # Estilos completos
-└── js/
-    ├── config.js       ← EDITAR PRIMERO: usuarios, áreas, API keys
-    ├── auth.js         # Autenticación por sesión
-    ├── graph.js        # Microsoft Graph API (Excel + Outlook)
-    ├── forms.js        # Formularios de carga por área
-    ├── dashboard.js    # Tablero interactivo con gráficos
-    ├── admin.js        # Panel de administración
-    ├── reminders.js    # Recordatorios automáticos (día 25)
-    └── app.js          # Controlador principal
-```
 
-## Configuración paso a paso
+La primera carga crea:
 
-### 1. Usuarios y contraseñas
-Editar `js/config.js` → objeto `USERS`. Cambiar las contraseñas antes de publicar.
+- base de datos SQLite
+- catálogos de áreas, usuarios, preguntas y listas
+- usuario administrador `admin`
+- contraseñas temporales para responsables, `cambiar2026`
+- libro de salida en `instance/PARACEL_repositorio_mensual_online.xlsx`
 
-**Credenciales por defecto:**
-| Usuario | Contraseña | Área |
-|---------|-----------|------|
-| admin | paracel2026 | Administrador |
-| hse.industrial | hse2026 | SSL Industrial |
-| hse.forestal | hse2026f | SSL Forestal |
-| forestal.ops | forOps2026 | Operaciones Forestales |
-| industrial.ops | indOps2026 | Operaciones Industriales |
-| rrhh | rrhh2026 | Talento Humano |
-| finanzas | fin2026 | Finanzas |
-| compras | cmp2026 | Compras |
-| comunicacion | com2026 | Comunicación Social |
-| ambiental | amb2026 | Ambiental |
-| logistica | log2026 | Logística |
-| fomento | fom2026 | Forestal Fomento |
+## Rutas principales
 
-### 2. Configurar Microsoft 365 / Graph API (para Excel y Outlook)
+- `/login`
+- `/`
+- `/dashboard`
+- `/form/<area_code>/<period_key>`
+- `/lists/<list_code>`
+- `/report/<period_key>`
+- `/admin`
+- `/admin/settings`
+- `/admin/users`
+- `/admin/areas`
+- `/admin/questions`
+- `/admin/options`
+- `/admin/export-workbook`
+- `/tasks/send-reminders`
 
-1. Ir a [portal.azure.com](https://portal.azure.com)
-2. **Azure Active Directory → Registros de aplicaciones → + Nueva**
-   - Nombre: `PARACEL SRM`
-   - Cuentas compatibles: Solo esta organización
-   - URI de redirección: Plataforma **SPA** → `https://monitorimpactosocial.github.io/onepage/`
-3. **Permisos API → + Agregar permiso → Microsoft Graph → Delegados:**
-   - `Files.ReadWrite`
-   - `Mail.Send`
-   - `User.Read`
-4. **Otorgar consentimiento de administrador**
-5. Copiar: **Id. de aplicación** (Client ID) y **Id. de directorio** (Tenant ID)
-6. Subir el Excel de PARACEL a OneDrive y copiar el ID desde la URL
-7. Actualizar `js/config.js`:
-   ```js
-   const GRAPH_CONFIG = {
-     clientId:    'TU-CLIENT-ID',
-     tenantId:    'TU-TENANT-ID',
-     excelFileId: 'ID-DEL-ARCHIVO-EN-ONEDRIVE',
-     redirectUri: 'https://monitorimpactosocial.github.io/onepage/',
-     scopes:      ['Files.ReadWrite', 'Mail.Send', 'User.Read'],
-   };
-   ```
+## Scheduler
 
-> **Mientras no se configure Microsoft 365**, los datos se guardan automáticamente en `localStorage` del navegador. Pueden exportarse como JSON desde Administración → Datos.
+La app inicia un `BackgroundScheduler` mensual. En producción, se recomienda además disparar `/tasks/send-reminders` desde un cron del servidor, o desde el scheduler de la plataforma de despliegue.
 
-### 3. Publicar en GitHub Pages
+## Libro en línea
 
-1. Copiar todos los archivos al repositorio `monitorimpactosocial/onepage` (rama `main`)
-2. Ir a Settings → Pages → Source: `main` / `/(root)`
-3. Acceder en: `https://monitorimpactosocial.github.io/onepage/`
+La app siempre genera un libro Excel local consolidado. Si se cargan las variables `GRAPH_*`, el archivo se sube automáticamente a OneDrive o SharePoint, dejando un libro en línea actualizado.
 
-## Funcionalidades
+## Despliegue
 
-| Feature | Descripción |
-|---------|-------------|
-| 🔐 Login por área | Cada responsable accede solo a su formulario |
-| ⚙️ Admin total | Usuario `admin` ve todos los formularios y el tablero |
-| 📊 Dashboard | Gráficos interactivos con Chart.js, KPIs, estado de completitud |
-| 💾 Guardado dual | OneDrive/Excel vía Graph API + localStorage como fallback |
-| 📧 Recordatorios | El día 25 de cada mes: envío automático vía Outlook |
-| 📄 PDF | Impresión del tablero o formulario vía `window.print()` |
-| 📅 Período configurable | Admin puede cambiar el mes activo desde el panel |
+Esta versión requiere backend, base de datos y almacenamiento de archivos, por lo que el código puede mantenerse en el repositorio `onepage`, pero la ejecución debe hacerse sobre un servicio de aplicación, por ejemplo Render, Railway, Azure App Service o un servidor propio. El uso de GitHub Pages, por sí solo, no cubre autenticación segura, adjuntos ni lógica de servidor.
 
-## Áreas configuradas
+## Observaciones técnicas
 
-- 🛡️ SSL Industrial (HSE Industrial – Edilson Souza)
-- 🛡️ SSL Forestal (HSE Forestal – Edilson Souza)
-- 🌲 Operaciones Forestales (Sara Santos)
-- 🌱 Forestal Propias y Fomento (Perla)
-- 🏭 Operaciones Industriales (Keyloir Hermes)
-- 👥 Talento Humano (Lucía Pereira)
-- 💰 Finanzas (Dirección)
-- 🛒 Compras (Dirección)
-- 📢 Comunicación y Sust. Social (Comunicaciones/Social)
-- 🌱 Sustentabilidad Ambiental (Gisselle)
-- 🚛 Logística (Dirección)
-
-## Seguridad
-
-> ⚠️ GitHub Pages sirve archivos estáticos públicamente. Las contraseñas en `config.js` son visibles en el código fuente.
-> 
-> **Para mayor seguridad en producción:**
-> - Integrar MSAL.js para autenticación OAuth2 con Microsoft Entra ID (Azure AD)
-> - Los usuarios ingresan con sus cuentas Microsoft corporativas
-> - No se necesitan contraseñas en el código
-
----
-*© 2026 PARACEL S.A. · Sistema desarrollado con Claude AI*
+- el dashboard trabaja sobre la base de datos de la app
+- el libro Excel queda como repositorio auditable y respaldo
+- el reporte PDF se obtiene con la opción de imprimir del navegador
+- el logo por defecto se incluye en `app/static/img/logo_paracel.png`, y puede ser reemplazado desde Administración

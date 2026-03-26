@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Áreas</h1>
+<section class="panel">
+  <form method="post" class="form-grid">
+    <label>Código<input name="code" required></label>
+    <label>Nombre<input name="name" required></label>
+    <label>Grupo<input name="group_name"></label>
+    <label>Responsable<input name="responsible"></label>
+    <label>Email<input name="email"></label>
+    <label>Hoja origen<input name="source_sheet"></label>
+    <label>Descripción<input name="description"></label>
+    <label class="inline"><input type="checkbox" name="is_active" checked> Activa</label>
+    <button type="submit">Crear</button>
+  </form>
+</section>
+<table class="data-table">
+  <thead><tr><th>Código</th><th>Nombre</th><th>Grupo</th><th>Responsable</th><th></th></tr></thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.code }}</td><td>{{ item.name }}</td><td>{{ item.group_name }}</td><td>{{ item.responsible }}</td>
+      <td><form method="post" action="{{ url_for('admin.delete_area', item_id=item.id) }}" onsubmit="return confirm('¿Eliminar?')"><button type="submit">Eliminar</button></form></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
